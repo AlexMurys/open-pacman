@@ -111,11 +111,24 @@ function movePacman( game ) {
   wrapTunnel( p, width );
 }
 
+// Punto 'a' del arcade: N celdas por delante de Pac-Man segun su direccion.
+// Incluye el bug fiel del arcade: mirando arriba, anade N celdas tambien a la
+// izquierda.
+function aheadOfPacman( game, cells ) {
+  const p = game.pacman;
+  const d = DIRS[ p.dir ];
+  return {
+    x: Math.round( p.x ) + d.x * cells - ( p.dir === 'up' ? cells : 0 ),
+    y: Math.round( p.y ) + d.y * cells,
+  };
+}
+
 // Celda objetivo de un fantasma, segun su kind. Se usa para elegir la direccion
-// que minimiza la distancia Manhattan. De momento todas las conductas apuntan
-// a la celda de Pac-Man.
+// que minimiza la distancia Manhattan. Blinky va directo a Pac-Man; pinky
+// corta por delante.
 function ghostTarget( game, g ) {
   const p = game.pacman;
+  if ( g.kind === 'pinky' ) return aheadOfPacman( game, 4 );
   return { x: Math.round( p.x ), y: Math.round( p.y ) };
 }
 

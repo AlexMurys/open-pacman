@@ -12,6 +12,8 @@ const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
 
 const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
+// Clyde persigue mientras esta mas lejos de esto; a <= se retira a su esquina.
+const CLYDE_SCORCH_DIST = 8;
 
 // Crea una partida nueva. Copia MAZE (pristino) a game.grid para poder comer
 // dots sin destruir el original, y reiniciar.
@@ -125,9 +127,13 @@ function aheadOfPacman( game, cells ) {
 
 // Celda objetivo de un fantasma, segun su kind. Se usa para elegir la direccion
 // que minimiza la distancia Manhattan. Blinky va directo a Pac-Man; pinky
-// corta por delante; inky flanquea usando la posicion de blinky.
+// corta por delante; inky flanquea usando la posicion de blinky; clyde se
+// retira cuando se acercan.
 function ghostTarget( game, g ) {
   const p = game.pacman;
+  const px = Math.round( p.x );
+  const py = Math.round( p.y );
+
   if ( g.kind === 'pinky' ) return aheadOfPacman( game, 4 );
   if ( g.kind === 'inky' ) {
     // Objetivo = 2*a - blinky, el vector Blinky->a duplicado.
@@ -138,7 +144,11 @@ function ghostTarget( game, g ) {
       y: 2 * a.y - Math.round( blinky.y ),
     };
   }
-  return { x: Math.round( p.x ), y: Math.round( p.y ) };
+  if ( g.kind === 'clyde' ) {
+    const dist = Math.abs( g.x - px ) + Math.abs( g.y - py );
+    return dist > CLYDE_SCORCH_DIST ? { x: px, y: py } : { x: 1, y: 29 };
+  }
+  return { x: px, y: py };
 }
 
 function decideGhost( game, g ) {

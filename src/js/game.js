@@ -14,6 +14,14 @@ const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
 // Clyde persigue mientras esta mas lejos de esto; a <= se retira a su esquina.
 const CLYDE_SCORCH_DIST = 8;
+// Salida de la pen: 1.5 s entre fantasma y fantasma (90 frames a 60 fps).
+const GHOST_RELEASE_BASE = 90;
+const GHOST_RELEASE_STEP = 90;
+// Fila del pasillo de arriba: cuando el fantasma la alcanza ya esta libre.
+const GHOST_EXIT_Y = 11;
+// Interior de la pen: los fantasmas que esperan rebotan entre estas filas.
+const PEN_TOP = 13;
+const PEN_BOTTOM = 15;
 
 // Crea una partida nueva. Copia MAZE (pristino) a game.grid para poder comer
 // dots sin destruir el original, y reiniciar.
@@ -31,6 +39,8 @@ function createGame() {
     lives: 3,
     dotsRemaining: dots,
     grid,
+    // Frames desde el (re)inicio; marca la salida escalonada de la pen.
+    ghostClock: 0,
     pacman: {
       x: PACMAN_START.x,
       y: PACMAN_START.y,
@@ -38,13 +48,16 @@ function createGame() {
       nextDir: null,
       speed: PACMAN_SPEED,
     },
-    ghosts: GHOST_STARTS.map( ( g ) => ( {
+    ghosts: GHOST_STARTS.map( ( g, i ) => ( {
       x: g.x,
       y: g.y,
       dir: 'up',
       speed: GHOST_SPEED,
       kind: g.kind,
       color: g.color,
+      // phase: 'casa' (espera) -> 'saliendo' (por la puerta) -> 'libre'.
+      phase: 'casa',
+      releaseAt: GHOST_RELEASE_BASE + i * GHOST_RELEASE_STEP,
     } ) ),
   };
 }
@@ -176,9 +189,51 @@ function decideGhost( game, g ) {
   g.dir = best;
 }
 
+// Rutina de salida de la pen: alinear en la columna de la puerta (13 o 14) y
+// subir por ella hasta el pasillo de arriba.
+function moveGhostLeaving( g ) {
+  const doorX = g.x <= 13 ? 13 : 14;
+  if ( aligned( g.x ) ) g.x = Math.round( g.x );
+  if ( aligned( g.y ) ) g.y = Math.round( g.y );
+
+  if ( g.x !== doorX ) {
+    g.dir = g.x < doorX ? 'right' : 'left';
+    g.x += DIRS[ g.dir ].x * g.speed;
+    return;
+  }
+  if ( g.y > GHOST_EXIT_Y ) {
+    g.dir = 'up';
+    g.y -= g.speed;
+    return;
+  }
+  g.phase = 'libre';
+}
+
+// Espera dentro de la pen: rebote vertical entre el techo y el fondo.
+function moveGhostBouncing( g ) {
+  if ( aligned( g.y ) ) g.y = Math.round( g.y );
+  if ( g.y <= PEN_TOP ) g.dir = 'down';
+  if ( g.y >= PEN_BOTTOM ) g.dir = 'up';
+  g.y += DIRS[ g.dir ].y * g.speed;
+}
+
 function moveGhost( game, g ) {
   const grid = game.grid;
   const width = grid[ 0 ].length;
+
+  if ( g.phase === 'casa' ) {
+    // Espera su turno de salida.
+    if ( game.ghostClock >= g.releaseAt ) {
+      g.phase = 'saliendo';
+      return;
+    }
+    moveGhostBouncing( g );
+    return;
+  }
+  if ( g.phase === 'saliendo' ) {
+    moveGhostLeaving( g );
+    return;
+  }
 
   if ( aligned( g.x ) && aligned( g.y ) ) {
     g.x = Math.round( g.x );
@@ -199,10 +254,12 @@ function resetPositions( game ) {
   p.y = PACMAN_START.y;
   p.dir = 'left';
   p.nextDir = null;
+  game.ghostClock = 0;
   game.ghosts.forEach( ( g, i ) => {
     g.x = GHOST_STARTS[ i ].x;
     g.y = GHOST_STARTS[ i ].y;
     g.dir = 'up';
+    g.phase = 'casa';
   } );
 }
 
@@ -212,6 +269,7 @@ function collides( a, b ) {
 
 function update( game ) {
   movePacman( game );
+  game.ghostClock++;
   game.ghosts.forEach( ( g ) => moveGhost( game, g ) );
 
   for ( const g of game.ghosts ) {

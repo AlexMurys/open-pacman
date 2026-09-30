@@ -125,10 +125,19 @@ function aheadOfPacman( game, cells ) {
 
 // Celda objetivo de un fantasma, segun su kind. Se usa para elegir la direccion
 // que minimiza la distancia Manhattan. Blinky va directo a Pac-Man; pinky
-// corta por delante.
+// corta por delante; inky flanquea usando la posicion de blinky.
 function ghostTarget( game, g ) {
   const p = game.pacman;
   if ( g.kind === 'pinky' ) return aheadOfPacman( game, 4 );
+  if ( g.kind === 'inky' ) {
+    // Objetivo = 2*a - blinky, el vector Blinky->a duplicado.
+    const a = aheadOfPacman( game, 2 );
+    const blinky = game.ghosts[ 0 ]; // GHOST_STARTS[0] es blinky
+    return {
+      x: 2 * a.x - Math.round( blinky.x ),
+      y: 2 * a.y - Math.round( blinky.y ),
+    };
+  }
   return { x: Math.round( p.x ), y: Math.round( p.y ) };
 }
 

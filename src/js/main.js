@@ -6,8 +6,14 @@ const ctx = canvas.getContext( '2d' );
 const overlay = document.getElementById( 'overlay' );
 const actionBtn = document.getElementById( 'action-btn' );
 
+// Bucle de paso fijo: 60 ticks/s, independiente de los Hz del monitor.
+const TICK_MS = 1000 / 60;
+const MAX_DELTA_MS = 100; // clamp: descarta el exceso tras volver de segundo plano
+let acc = 0;
+let last = performance.now();
+let tick = 0;
+
 let game = createGame();
-let frame = 0;
 
 const KEY_DIR = {
   ArrowLeft: 'left',
@@ -39,15 +45,23 @@ function startGame() {
 
 if ( actionBtn ) actionBtn.addEventListener( 'click', startGame );
 
-function loop() {
-  frame++;
-  if ( game.state === 'playing' ) {
-    update( game );
-    if ( game.state === 'won' ) showOverlay( 'GANASTE', 'win', 'Reiniciar' );
-    else if ( game.state === 'lost' ) showOverlay( 'PERDISTE', 'lose', 'Reiniciar' );
+function loop( now ) {
+  const nowMs = typeof now === 'undefined' ? performance.now() : now;
+  acc += Math.min( nowMs - last, MAX_DELTA_MS );
+  last = nowMs;
+
+  while ( acc >= TICK_MS ) {
+    acc -= TICK_MS;
+    tick++;
+    if ( game.state === 'playing' ) {
+      update( game );
+      if ( game.state === 'won' ) showOverlay( 'GANASTE', 'win', 'Reiniciar' );
+      else if ( game.state === 'lost' ) showOverlay( 'PERDISTE', 'lose', 'Reiniciar' );
+    }
   }
-  draw( ctx, game, frame );
+
+  draw( ctx, game, tick );
   requestAnimationFrame( loop );
 }
 
-loop();
+requestAnimationFrame( loop );

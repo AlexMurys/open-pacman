@@ -7,6 +7,16 @@ const DOOR_COLOR = '#ffb8ff';
 const DOT_COLOR = '#ffb897';
 const PELLET_COLOR = '#ffb897';
 const FRIGHT_COLOR = '#2121ff'; // azul oscuro del arcade
+const FRIGHT_FLASH_COLOR = '#fff'; // blanco del parpadeo final
+// game.js es el duenno de los ticks del susto; se leen de ahi para no duplicar
+// las constantes. Los scripts comparten ambito global, asi que los alias llevan
+// otro nombre: redeclarar 'const FRIGHT_TICKS' aqui seria un SyntaxError.
+const FRIGHT_TOTAL = window.FRIGHT_TICKS;
+const FLASH_TICKS = window.FRIGHT_FLASH_TICKS;
+// Parpadeo blanco/azul del tramo final: 2 ticks de blanco, 5 de azul.
+const FLASH_WHITE_TICKS = 2;
+const FLASH_BLUE_TICKS = 5;
+const FLASH_PERIOD = FLASH_WHITE_TICKS + FLASH_BLUE_TICKS;
 
 function cellCenter( x, y ) {
   return { cx: x * TILE + TILE / 2, cy: y * TILE + TILE / 2 };
@@ -129,10 +139,15 @@ function drawEyes( ctx, cx, cy, ghostDir ) {
   }
 }
 
-// Colores del modo asustado, segun el estado global del juego.
+// Color del susto, segun el estado global del juego. En los ultimos
+// FRIGHT_FLASH_TICKS (2 s) parpadea blanco/azul antes de volver a su color.
 function ghostPaint( game, g ) {
-  if ( game.frightTicks > 0 ) return FRIGHT_COLOR;
-  return g.color;
+  if ( game.frightTicks <= 0 ) return g.color;
+  if ( game.frightTicks > FLASH_TICKS ) return FRIGHT_COLOR;
+  // Dentro del tramo final, el offset se toma desde el arranque del susto para
+  // que el parpadeo sea continuo en vez de depender del tick de activacion.
+  const phase = ( FRIGHT_TOTAL - game.frightTicks ) % FLASH_PERIOD;
+  return phase < FLASH_WHITE_TICKS ? FRIGHT_FLASH_COLOR : FRIGHT_COLOR;
 }
 
 function drawGhost( ctx, game, g ) {

@@ -390,3 +390,6 @@ function update( game ) {
 window.createGame = createGame;
 window.update = update;
 window.DIRS = DIRS;
+// render.js los necesita para el parpadeo final del modo asustado.
+window.FRIGHT_TICKS = FRIGHT_TICKS;
+window.FRIGHT_FLASH_TICKS = FRIGHT_FLASH_TICKS;

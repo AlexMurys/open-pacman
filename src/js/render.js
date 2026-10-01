@@ -98,7 +98,7 @@ function drawPacman( ctx, p, frame ) {
   ctx.fill();
 }
 
-function drawGhost( ctx, g, color ) {
+function drawGhost( ctx, g ) {
   const { cx, cy } = cellCenter( g.x, g.y );
   const r = TILE / 2 - 1;
   const top = cy - r;
@@ -106,7 +106,7 @@ function drawGhost( ctx, g, color ) {
   const left = cx - r;
   const right = cx + r;
 
-  ctx.fillStyle = color;
+  ctx.fillStyle = g.color;
   ctx.beginPath();
   ctx.arc( cx, cy - 1, r, Math.PI, 0, false ); // cabeza
   ctx.lineTo( right, bottom );
@@ -144,8 +144,6 @@ function drawHUD( ctx, game, W ) {
   ctx.fillText( 'VIDAS ' + game.lives, W * TILE - 8, 4 );
 }
 
-const GHOST_COLORS = [ '#ff0000', '#00ffff', '#ffb8ff', '#ffb852' ];
-
 function draw( ctx, game, frame ) {
   const grid = game.grid;
   const W = grid[ 0 ].length;
@@ -158,7 +156,7 @@ function draw( ctx, game, frame ) {
   drawDoor( ctx, grid );
   drawDots( ctx, grid );
   drawPacman( ctx, game.pacman, frame );
-  game.ghosts.forEach( ( g, i ) => drawGhost( ctx, g, GHOST_COLORS[ i ] || '#ff0000' ) );
+  game.ghosts.forEach( ( g ) => drawGhost( ctx, g ) );
   drawHUD( ctx, game, W );
 }
 

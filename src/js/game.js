@@ -13,6 +13,10 @@ const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
 const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
 const PELLET_POINTS = 50;   // valor de un power pellet (celda 4)
+// Modo asustado: 6 s a 60 ticks/s (SPEC 02), el nivel 1 del arcade.
+const FRIGHT_TICKS = 360;
+const FRIGHT_FLASH_TICKS = 120; // ultimos 2 s: parpadeo blanco/azul
+const FRIGHT_SPEED = 0.05;      // mitad de GHOST_SPEED
 // Clyde persigue mientras esta mas lejos de esto; a <= se retira a su esquina.
 const CLYDE_SCORCH_DIST = 8;
 // Salida de la pen: 1.5 s entre fantasma y fantasma (90 frames a 60 fps).
@@ -43,6 +47,10 @@ function createGame() {
     grid,
     // Frames desde el (re)inicio; marca la salida escalonada de la pen.
     ghostClock: 0,
+    // Modo asustado global (como el arcade): 0 = inactivo, si no cuenta atras.
+    frightTicks: 0,
+    // Cadena de fantasmas asustados comidos: 0..3 -> 200/400/800/1600.
+    frightChain: 0,
     pacman: {
       x: PACMAN_START.x,
       y: PACMAN_START.y,
@@ -122,6 +130,9 @@ function movePacman( game ) {
       grid[ p.y ][ p.x ] = 0;
       game.score += PELLET_POINTS;
       game.dotsRemaining--;
+      // El pellet calma a todos los fantasmas y reinicia la cadena.
+      game.frightTicks = FRIGHT_TICKS;
+      game.frightChain = 0;
     }
     // Si no puede seguir, se detiene en la celda.
     if ( !canMove( grid, p.x, p.y, p.dir, 'pacman' ) ) return;
@@ -180,6 +191,12 @@ function decideGhost( game, g ) {
   // Sin salida (callejon): permitir el giro de 180.
   const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
 
+  // Asustado: direccion aleatoria uniforme entre las validas, sin objetivo.
+  if ( game.frightTicks > 0 ) {
+    g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
+    return;
+  }
+
   const target = ghostTarget( game, g );
   let best = choices[ 0 ];
   let bestDist = Infinity;
@@ -228,6 +245,10 @@ function moveGhost( game, g ) {
   const grid = game.grid;
   const width = grid[ 0 ].length;
 
+  // Asustado: mitad de velocidad (tambien en la pen, para el rebote visual).
+  // Se reasigna cada tick para volver a GHOST_SPEED al terminar el susto.
+  g.speed = game.frightTicks > 0 ? FRIGHT_SPEED : GHOST_SPEED;
+
   if ( g.phase === 'casa' ) {
     // Espera su turno de salida.
     if ( game.ghostClock >= g.releaseAt ) {
@@ -245,6 +266,11 @@ function moveGhost( game, g ) {
   if ( aligned( g.x ) && aligned( g.y ) ) {
     g.x = Math.round( g.x );
     g.y = Math.round( g.y );
+    // Al activarse o reiniciarse el susto, los fantasmas libres invierten la
+    // marcha al instante (frightTicks == FRIGHT_TICKS marca el tick de activacion).
+    if ( game.frightTicks === FRIGHT_TICKS && g.phase === 'libre' ) {
+      g.dir = OPPOSITE[ g.dir ];
+    }
     decideGhost( game, g );
     if ( !canMove( grid, g.x, g.y, g.dir, 'ghost' ) ) return;
   }
@@ -262,11 +288,15 @@ function resetPositions( game ) {
   p.dir = 'left';
   p.nextDir = null;
   game.ghostClock = 0;
+  // Sin susto residual: los fantasmas salen normales y escalonados.
+  game.frightTicks = 0;
+  game.frightChain = 0;
   game.ghosts.forEach( ( g, i ) => {
     g.x = GHOST_STARTS[ i ].x;
     g.y = GHOST_STARTS[ i ].y;
     g.dir = 'up';
     g.phase = 'casa';
+    g.speed = GHOST_SPEED;
   } );
 }
 
@@ -290,6 +320,10 @@ function update( game ) {
       break;
     }
   }
+
+  // La cuenta atras del susto va al final: si un pellet se come en este tick, los
+  // fantasmas ya han actuado asustados y el timer baja a FRIGHT_TICKS - 1.
+  if ( game.frightTicks > 0 ) game.frightTicks--;
 
   if ( game.dotsRemaining <= 0 ) game.state = 'won';
 }

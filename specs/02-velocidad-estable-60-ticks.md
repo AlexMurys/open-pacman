@@ -1,6 +1,6 @@
 # SPEC 02 — Velocidad estable: bucle a paso fijo de 60 ticks/s
 
-> **Estado:** Approved
+> **Estado:** Implemented
 > **Depende de:** ninguno
 > **Fecha:** 2026-10-01
 > **Objetivo:** El juego corre a ritmo constante de 60 ticks por segundo en cualquier monitor (incluidos los de 120 Hz), manteniendo las velocidades y tiempos actuales.

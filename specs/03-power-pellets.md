@@ -1,21 +1,21 @@
 # SPEC 03 — Power pellets y modo asustado
 
-> **Estado:** Approved
+> **Estado:** Implemented
 > **Depende de:** SPEC 01
 > **Fecha:** 2026-10-01
-> **Objetivo:** Cuatro power pellets en las esquinas activan el modo asustado fiel del arcade: fantasmas azules, lentos y erráticos, comestibles en cadena 200/400/800/1600, que regresan a la casa como ojos y reviven.
+> **Objetivo:** Cuatro power pellets en las posiciones que ocupa el energizer en esta versión del laberinto — `(1,3)`, `(26,3)`, `(1,23)`, `(26,23)` — activan el modo asustado fiel del arcade: fantasmas azules, lentos y erráticos, comestibles en cadena 200/400/800/1600, que regresan a la casa como ojos y reviven.
 
 ## Alcance
 
 **Dentro:**
 
-- `src/js/maze.js`: 4 power pellets en las celdas del original `(1,3)`, `(26,3)`, `(1,23)`, `(26,23)` — pasan de `.` a `o` en `MAZE_STR`; `parseTile` mapea `'o'` → 4; leyenda de celdas actualizada.
+- `src/js/maze.js`: 4 power pellets en las celdas `(1,3)`, `(26,3)`, `(1,23)`, `(26,23)` — pasan de `.` a `o` en `MAZE_STR`; `parseTile` mapea `'o'` → 4; leyenda de celdas actualizada.
 - `src/js/game.js`: comer pellet suma 50 y activa el modo asustado: `frightTicks = 360`, cadena a 0.
 - Modo asustado (6 s): fantasmas azul oscuro, giro 180° forzado inmediato (solo fase `libre`), velocidad 0.05 (mitad), dirección aleatoria en cada cruce.
 - Comer fantasma azul: 200/400/800/1600 según cadena; el fantasma pasa a fase `ojos` (solo ojos, velocidad 0.2), vuelve a la puerta, entra, revive y sale de nuevo por la rutina `saliendo` existente — revive sin asustado.
 - Fantasmas en `casa`/`saliendo` también se pintan azules; comestibles solo fuera (Pac-Man no puede entrar).
 - `src/js/render.js`: pellets como círculos grandes con radio pulsante (tick); fantasma asustado azul con cara de susto; parpadeo blanco/azul los últimos 2 s; fase `ojos` dibuja solo los ojos.
-- `game.dotsRemaining` cuenta dots + pellets (244): hay que comer los 4 para ganar.
+- `game.dotsRemaining` cuenta dots + pellets (279): hay que comer los 4 para ganar.
 - `resetPositions` limpia `frightTicks`/`frightChain` (sin susto residual).
 - `AGENTS.md`: actualizar líneas de "Celdas" (valor 4) y "Fantasmas" (fase `ojos`, modo asustado).
 
@@ -55,7 +55,7 @@ Convenciones:
 
 ## Plan de implementación
 
-1. `maze.js`: `o` en las 4 celdas + `parseTile`. `game.js`: `dotsRemaining` cuenta 2 y 4; comer pellet (50, desaparece del grid). `render.js`: `drawDots` dibuja `v === 4` como círculo grande pulsante. Manual: 4 pellets grandes pulsando; comérselos suma 50 y el juego se gana solo con las 244 piezas.
+1. `maze.js`: `o` en las 4 celdas + `parseTile`. `game.js`: `dotsRemaining` cuenta 2 y 4; comer pellet (50, desaparece del grid). `render.js`: `drawDots` dibuja `v === 4` como círculo grande pulsante. Manual: 4 pellets grandes pulsando; comérselos suma 50 y el juego se gana solo con las 279 piezas.
 2. `game.js`: modo asustado — `frightTicks`/`frightChain`, activación al comer pellet (y reinicio si ya activo), velocidad 0.05, giro 180° forzado en fase `libre`, rama aleatoria en `decideGhost`, cuenta atrás en `update`, `resetPositions` limpia el susto. `render.js`: fantasma azul con cara de susto. Manual: azules lentos y erráticos 6 s; pierden una vida → salen normales.
 3. `game.js`: comer fantasmas — colisión con asustado: `200 * 2^chain`, `chain++`, fase `ojos` a `EYES_SPEED` con objetivo puerta; colisión con `ojos` sin efecto; al llegar a la casa revive → `saliendo` → `libre`. `render.js`: `ojos` dibuja solo los ojos. Manual: comer 2+ seguidos suma 200, 400...; el comido vuelve como ojos y sale normal.
 4. `render.js`: parpadeo blanco/azul los últimos `FRIGHT_FLASH_TICKS`. Manual: en los últimos 2 s parpadean antes de volver a su color.
@@ -63,23 +63,23 @@ Convenciones:
 
 ## Criterios de aceptación
 
-- [ ] Al abrir `src/index.html` no hay errores en la consola.
-- [ ] Se ven 4 pellets grandes en las esquinas, pulsando de tamaño.
-- [ ] Comer un pellet suma 50 y lo borra del tablero.
-- [ ] Al comerlo, los fantasmas se vuelven azul oscuro, invierten la marcha y van a mitad de velocidad de forma errática.
-- [ ] Los fantasmas azules se pueden comer: 1º 200, 2º 400, 3º 800, 4º 1600 con el mismo pellet.
-- [ ] El comido se ve como ojos, regresa a la casa, revive y vuelve a salir sin estar asustado.
-- [ ] El susto dura 6 s y los últimos 2 s parpadean blanco/azul.
-- [ ] Comer otro pellet con el susto activo reinicia los 6 s y la cadena.
-- [ ] La victoria requiere las 244 piezas (dots + pellets).
-- [ ] Tras perder una vida no queda susto residual: los fantasmas salen normales y escalonados.
-- [ ] Sin regresiones: score, vidas, túnel, personalidades, ganar y perder funcionan igual.
+- [x] Al abrir `src/index.html` no hay errores en la consola.
+- [x] Se ven 4 pellets grandes en las esquinas, pulsando de tamaño.
+- [x] Comer un pellet suma 50 y lo borra del tablero.
+- [x] Al comerlo, los fantasmas se vuelven azul oscuro, invierten la marcha y van a mitad de velocidad de forma errática.
+- [x] Los fantasmas azules se pueden comer: 1º 200, 2º 400, 3º 800, 4º 1600 con el mismo pellet.
+- [x] El comido se ve como ojos, regresa a la casa, revive y vuelve a salir sin estar asustado.
+- [x] El susto dura 6 s y los últimos 2 s parpadean blanco/azul.
+- [x] Comer otro pellet con el susto activo reinicia los 6 s y la cadena.
+- [x] La victoria requiere las 279 piezas (dots + pellets).
+- [x] Tras perder una vida no queda susto residual: los fantasmas salen normales y escalonados.
+- [x] Sin regresiones: score, vidas, túnel, personalidades, ganar y perder funcionan igual.
 
 ## Decisiones
 
-- **Sí:** fidelidad arcade en las 5 decisiones (susto completo, cadena + ojos, 6 s, parpadeos, victoria con 244). Elección explícita del usuario.
+- **Sí:** fidelidad arcade en las 5 decisiones (susto completo, cadena + ojos, 6 s, parpadeos, victoria con todas las piezas). Elección explícita del usuario.
 - **Sí:** valor de celda 4 (`'o'`). Sigue el patrón numérico del grid y la separación `MAZE` prístino / `game.grid`.
-- **Sí:** posiciones `(1,3)`, `(26,3)`, `(1,23)`, `(26,23)`. Son las 4 energizers exactas del arcade ("cada esquina").
+- **Sí:** posiciones `(1,3)`, `(26,3)`, `(1,23)`, `(26,23)`. Son las 4 energizers del arcade ("cada esquina") en la geometría de este laberinto. No son las esquinas literales del grid —que serían `(1,1)`, `(26,1)`, `(1,29)`, `(26,29)`— pero son los puntos de máximo alejamiento entre la pen y los bordes.
 - **Sí:** timer + cadena globales en `game`, no flags por fantasma. Todos se calman a la vez, como el arcade; y revive-no-asustado cae solo.
 - **Sí:** aleatorio uniforme en cruces, no la pseudo-tabla del arcade. Perceptiblemente equivalente, mucho menos código.
 - **Sí:** `ojos` reutiliza `decideGhost` (objetivo puerta) y la fase `saliendo` para revivir y salir.

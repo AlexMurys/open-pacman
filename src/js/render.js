@@ -111,6 +111,24 @@ function drawPacman( ctx, p, frame ) {
   ctx.fill();
 }
 
+// Par de ojos mirando segun direccion, centrado en (cx,cy). Compartido por el
+// fantasma normal y la fase 'ojos'.
+function drawEyes( ctx, cx, cy, ghostDir ) {
+  const dir = DIRS[ ghostDir ] || { x: 0, y: 0 };
+  const ex = dir.x * 1.6;
+  const ey = dir.y * 1.6;
+  for ( const off of [ -3.5, 3.5 ] ) {
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc( cx + off, cy, 3, 0, Math.PI * 2 );
+    ctx.fill();
+    ctx.fillStyle = '#0000bb';
+    ctx.beginPath();
+    ctx.arc( cx + off + ex, cy + ey, 1.5, 0, Math.PI * 2 );
+    ctx.fill();
+  }
+}
+
 // Colores del modo asustado, segun el estado global del juego.
 function ghostPaint( game, g ) {
   if ( game.frightTicks > 0 ) return FRIGHT_COLOR;
@@ -119,6 +137,13 @@ function ghostPaint( game, g ) {
 
 function drawGhost( ctx, game, g ) {
   const { cx, cy } = cellCenter( g.x, g.y );
+
+  // Fase ojos: solo el par de ojos, mirando en la direccion de vuelo.
+  if ( g.phase === 'ojos' ) {
+    drawEyes( ctx, cx, cy, g.dir );
+    return;
+  }
+
   const r = TILE / 2 - 1;
   const top = cy - r;
   const bottom = cy + r;
@@ -164,19 +189,7 @@ function drawGhost( ctx, game, g ) {
   }
 
   // ojos mirando segun direccion
-  const dir = DIRS[ g.dir ] || { x: 0, y: 0 };
-  const ex = dir.x * 1.6;
-  const ey = dir.y * 1.6;
-  for ( const off of [ -3.5, 3.5 ] ) {
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc( cx + off, cy - 1, 3, 0, Math.PI * 2 );
-    ctx.fill();
-    ctx.fillStyle = '#0000bb';
-    ctx.beginPath();
-    ctx.arc( cx + off + ex, cy - 1 + ey, 1.5, 0, Math.PI * 2 );
-    ctx.fill();
-  }
+  drawEyes( ctx, cx, cy - 1, g.dir );
 }
 
 function drawHUD( ctx, game, W ) {

@@ -12,6 +12,7 @@ const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
 
 const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
+const PELLET_POINTS = 50;   // valor de un power pellet (celda 4)
 // Clyde persigue mientras esta mas lejos de esto; a <= se retira a su esquina.
 const CLYDE_SCORCH_DIST = 8;
 // Salida de la pen: 1.5 s entre fantasma y fantasma (90 frames a 60 fps).
@@ -31,7 +32,8 @@ function createGame() {
   grid[ PACMAN_START.y ][ PACMAN_START.x ] = 0;
 
   let dots = 0;
-  for ( const row of grid ) for ( const v of row ) if ( v === 2 ) dots++;
+  // Celdas 2 (dot) y 4 (power pellet) cuentan como piezas por comer.
+  for ( const row of grid ) for ( const v of row ) if ( v === 2 || v === 4 ) dots++;
 
   return {
     state: 'start',
@@ -110,10 +112,15 @@ function movePacman( game ) {
       p.dir = p.nextDir;
       p.nextDir = null;
     }
-    // Comer dot.
-    if ( grid[ p.y ][ p.x ] === 2 ) {
+    // Comer dot o power pellet.
+    const cell = grid[ p.y ][ p.x ];
+    if ( cell === 2 ) {
       grid[ p.y ][ p.x ] = 0;
       game.score += 10;
+      game.dotsRemaining--;
+    } else if ( cell === 4 ) {
+      grid[ p.y ][ p.x ] = 0;
+      game.score += PELLET_POINTS;
       game.dotsRemaining--;
     }
     // Si no puede seguir, se detiene en la celda.

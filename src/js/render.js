@@ -5,6 +5,7 @@ const TILE = 20;
 const WALL_COLOR = '#2121ff';
 const DOOR_COLOR = '#ffb8ff';
 const DOT_COLOR = '#ffb897';
+const PELLET_COLOR = '#ffb897';
 
 function cellCenter( x, y ) {
   return { cx: x * TILE + TILE / 2, cy: y * TILE + TILE / 2 };
@@ -66,12 +67,23 @@ function drawDoor( ctx, grid ) {
   ctx.stroke();
 }
 
-function drawDots( ctx, grid ) {
-  ctx.fillStyle = DOT_COLOR;
+// Dots pequenos (celda 2) y power pellets (celda 4) como circulos grandes cuyo
+// radio late con el frame.
+function drawDots( ctx, grid, frame ) {
   for ( let y = 0; y < grid.length; y++ ) {
     for ( let x = 0; x < grid[ 0 ].length; x++ ) {
-      if ( grid[ y ][ x ] !== 2 ) continue;
+      const v = grid[ y ][ x ];
+      if ( v !== 2 && v !== 4 ) continue;
       const { cx, cy } = cellCenter( x, y );
+      if ( v === 4 ) {
+        const pulse = ( Math.sin( frame * 0.15 ) * 0.5 + 0.5 ) * 2 + 4;
+        ctx.fillStyle = PELLET_COLOR;
+        ctx.beginPath();
+        ctx.arc( cx, cy, pulse, 0, Math.PI * 2 );
+        ctx.fill();
+        continue;
+      }
+      ctx.fillStyle = DOT_COLOR;
       ctx.beginPath();
       ctx.arc( cx, cy, 2.5, 0, Math.PI * 2 );
       ctx.fill();
@@ -154,7 +166,7 @@ function draw( ctx, game, frame ) {
 
   drawWalls( ctx, grid );
   drawDoor( ctx, grid );
-  drawDots( ctx, grid );
+  drawDots( ctx, grid, frame );
   drawPacman( ctx, game.pacman, frame );
   game.ghosts.forEach( ( g ) => drawGhost( ctx, g ) );
   drawHUD( ctx, game, W );
